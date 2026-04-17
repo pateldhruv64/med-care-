@@ -24,8 +24,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, onInvoiceCreated }) => {
           ]);
           setPatients(pRes.data);
           setDoctors(dRes.data);
-        } catch (error) {
-          console.error('Error fetching data:', error);
+        } catch {
+          toast.error('Failed to load patients or doctors');
         }
       };
       fetchData();

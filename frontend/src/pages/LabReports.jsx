@@ -116,8 +116,8 @@ const LabReports = () => {
     try {
       const { data } = await api.get('/lab-reports');
       setReports(data);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
+      // intentionally no-op
     } finally {
       setLoading(false);
     }
@@ -127,8 +127,8 @@ const LabReports = () => {
     try {
       const { data } = await api.get('/patients');
       setPatients(data);
-    } catch (error) {
-      console.error('Error fetching patients:', error);
+    } catch {
+      // intentionally no-op
     }
   };
 

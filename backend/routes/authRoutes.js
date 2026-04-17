@@ -74,7 +74,6 @@ router.post(
         message: 'Profile picture uploaded successfully',
       });
     } catch (error) {
-      console.error('Upload Error:', error);
       res.status(500).json({ message: error.message || 'Upload failed' });
     }
   },

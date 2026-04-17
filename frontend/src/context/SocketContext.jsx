@@ -26,8 +26,8 @@ export const SocketProvider = ({ children }) => {
       const { data } = await api.get('/notifications/unread-count');
       setMessageCount(data.messageCount || 0);
       setNotificationCount(data.notificationCount || 0);
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
+    } catch {
+      // intentionally no-op
     }
   };
 
@@ -83,12 +83,8 @@ export const SocketProvider = ({ children }) => {
       });
 
       newSocket.on('online_users', handleOnlineUsers);
-
-      newSocket.on('connect_error', (error) => {
-        console.error('Socket connection failed:', error?.message || error);
-      });
-    } catch (error) {
-      console.error('Socket setup failed:', error);
+    } catch {
+      // intentionally no-op
     }
 
     // Cleanup

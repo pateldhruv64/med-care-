@@ -22,8 +22,7 @@ const SellMedicineModal = ({ isOpen, onClose, onSold }) => {
           ]);
           setPatients(pRes.data);
           setMedicines(mRes.data);
-        } catch (error) {
-          console.error('Error fetching data for sell modal:', error);
+        } catch {
           toast.error('Failed to load patients or medicines');
         }
       };

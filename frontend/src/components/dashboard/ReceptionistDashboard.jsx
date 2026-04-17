@@ -104,8 +104,8 @@ const ReceptionistDashboard = () => {
 
         setTodayAppts(todayAppointments.slice(0, 10));
         setRecentInvoices(invoices.slice(0, 5));
-      } catch (error) {
-        console.error('Error:', error);
+      } catch {
+        // intentionally no-op
       } finally {
         setLoading(false);
       }

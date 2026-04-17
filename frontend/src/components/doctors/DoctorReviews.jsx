@@ -21,8 +21,8 @@ const DoctorReviews = ({ doctorId, isOpen, onClose }) => {
     try {
       const { data } = await api.get(`/reviews/doctor/${doctorId}`);
       setData(data);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
+    } catch {
+      // silent fallback for review fetch failure
     } finally {
       setLoading(false);
     }

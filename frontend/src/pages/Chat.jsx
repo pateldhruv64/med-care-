@@ -35,8 +35,8 @@ const Chat = () => {
         const { data } = await api.get(`/chat/users?t=${new Date().getTime()}`);
         setUsers(data);
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching users:', error);
+      } catch {
+        // intentionally no-op
         setLoading(false);
       }
     };
@@ -62,8 +62,8 @@ const Chat = () => {
             u._id === selectedUser._id ? { ...u, hasUnread: false } : u,
           ),
         );
-      } catch (error) {
-        console.error('Error fetching messages:', error);
+      } catch {
+        // intentionally no-op
       }
     };
     fetchMessages();
@@ -147,8 +147,8 @@ const Chat = () => {
         updatedUsers.unshift(receiver);
         return updatedUsers;
       });
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } catch {
+      // intentionally no-op
     }
   };
 

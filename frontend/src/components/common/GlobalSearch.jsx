@@ -82,8 +82,8 @@ const GlobalSearch = ({ isOpen, onClose }) => {
       try {
         const res = await api.get(`/search?q=${encodeURIComponent(query)}`);
         setResults(res.data);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        setResults(null);
       } finally {
         setLoading(false);
       }

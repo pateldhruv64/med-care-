@@ -122,9 +122,7 @@ const AdminDashboard = () => {
           totalEarnings,
           pendingBills,
         });
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      }
+      } catch {}
     };
 
     fetchStats();

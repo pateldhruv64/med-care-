@@ -80,8 +80,8 @@ const Appointments = () => {
     try {
       const { data } = await api.get('/doctors');
       setDoctors(data);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // intentionally no-op
     }
   };
 
@@ -120,8 +120,8 @@ const Appointments = () => {
         }
       }
       setReviewedIds(checked);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // intentionally no-op
     }
   };
 

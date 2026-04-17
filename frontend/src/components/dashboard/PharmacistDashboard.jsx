@@ -85,8 +85,7 @@ const PharmacistDashboard = () => {
           todaySales: todaySales.length,
           todayEarnings,
         });
-      } catch (error) {
-        console.error('Error fetching pharmacist data:', error);
+      } catch {
       } finally {
         setLoading(false);
       }

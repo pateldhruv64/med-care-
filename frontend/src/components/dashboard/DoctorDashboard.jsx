@@ -53,18 +53,14 @@ const DoctorDashboard = () => {
         pendingList: pending, // Add list of pending appointments
         completed: completed.length,
       });
-    } catch (error) {
-      console.error('Error fetching doctor stats:', error);
-    }
+    } catch {}
   };
 
   const handleStatusUpdate = async (id, status) => {
     try {
       await api.put(`/appointments/${id}`, { status });
       fetchStats(); // Refresh data
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
+    } catch {}
   };
 
   useEffect(() => {

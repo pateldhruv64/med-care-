@@ -98,8 +98,8 @@ const MedicalRecords = () => {
         setMedicalHistory(results[2].data);
         setLabReports(results[3].data.filter((r) => r.status === 'Completed'));
         if (results[4]) setPatients(results[4].data);
-      } catch (error) {
-        console.error('Error fetching medical records:', error);
+      } catch {
+        // intentionally no-op
       } finally {
         setLoading(false);
       }

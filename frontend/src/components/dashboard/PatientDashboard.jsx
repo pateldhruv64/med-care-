@@ -68,9 +68,7 @@ const PatientDashboard = () => {
           prescriptions: prescriptionsData.length,
           bills: billCount,
         });
-      } catch (error) {
-        console.error('Error fetching patient stats:', error);
-      }
+      } catch {}
     };
     fetchStats();
   }, []);

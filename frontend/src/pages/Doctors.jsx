@@ -55,8 +55,8 @@ const Doctors = () => {
     try {
       const { data } = await api.get('/reviews/ratings');
       setRatings(data);
-    } catch (error) {
-      console.error('Failed to fetch ratings:', error);
+    } catch {
+      // intentionally no-op
     }
   };
 
