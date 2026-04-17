@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Phone, Calendar, UserPlus } from 'lucide-react';
+import { X, Mail, Phone, Calendar, UserPlus, Lock } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../utils/axiosConfig';
 
@@ -12,7 +12,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
     phone: '',
     gender: 'Male',
     dateOfBirth: '',
-    password: 'password123', // Default password for patients added by staff
+    password: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -22,6 +22,16 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const passwordPolicy =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!passwordPolicy.test(formData.password)) {
+      toast.error(
+        'Password must be at least 8 characters and include uppercase, lowercase, number, and special character',
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       await api.post('/patients', formData);
@@ -35,7 +45,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
         phone: '',
         gender: 'Male',
         dateOfBirth: '',
-        password: 'password123',
+        password: '',
       });
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to add patient');
@@ -159,6 +169,26 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }) => {
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-slate-600 mb-1 text-sm font-medium">
+                  Temporary Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 text-slate-400 w-4 h-4" />
+                  <input
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full pl-9 border border-slate-200 rounded-lg py-2 px-3 focus:outline-none focus:border-cyan-500 transition-colors"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Must contain uppercase, lowercase, number, special character,
+                  and be 8+ characters.
+                </p>
               </div>
             </div>
 

@@ -27,6 +27,32 @@ const categoryIcons = {
   },
 };
 
+const getNavigationTarget = (category, item) => {
+  if (!item?._id) {
+    return '/dashboard';
+  }
+
+  if (category === 'patients') {
+    const label = `${item.firstName || ''} ${item.lastName || ''}`.trim();
+    return `/patients?highlight=${encodeURIComponent(item._id)}&q=${encodeURIComponent(label)}`;
+  }
+
+  if (category === 'doctors') {
+    const label = `${item.firstName || ''} ${item.lastName || ''}`.trim();
+    return `/doctors?highlight=${encodeURIComponent(item._id)}&q=${encodeURIComponent(label)}`;
+  }
+
+  if (category === 'appointments') {
+    return `/appointments?highlight=${encodeURIComponent(item._id)}`;
+  }
+
+  if (category === 'medicines') {
+    return `/pharmacy?highlight=${encodeURIComponent(item._id)}&q=${encodeURIComponent(item.name || '')}`;
+  }
+
+  return '/dashboard';
+};
+
 const GlobalSearch = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
@@ -147,16 +173,9 @@ const GlobalSearch = ({ isOpen, onClose }) => {
                         <button
                           key={item._id}
                           className="w-full text-left px-5 py-2.5 hover:bg-slate-50 flex items-center gap-3 transition-colors"
-                          onClick={() => {
-                            if (category === 'patients')
-                              handleNavigate('/patients');
-                            else if (category === 'doctors')
-                              handleNavigate('/doctors');
-                            else if (category === 'appointments')
-                              handleNavigate('/appointments');
-                            else if (category === 'medicines')
-                              handleNavigate('/pharmacy');
-                          }}
+                          onClick={() =>
+                            handleNavigate(getNavigationTarget(category, item))
+                          }
                         >
                           <div className={`p-2 rounded-lg ${cat.color}`}>
                             <Icon size={16} />

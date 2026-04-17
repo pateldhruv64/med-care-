@@ -1,18 +1,33 @@
 import jwt from 'jsonwebtoken';
 
+const DEFAULT_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+const getTokenMaxAge = () => {
+  const configured = Number.parseInt(process.env.JWT_COOKIE_MAX_AGE_MS, 10);
+
+  if (Number.isNaN(configured) || configured <= 0) {
+    return DEFAULT_TOKEN_MAX_AGE_MS;
+  }
+
+  return configured;
+};
+
 const generateToken = (res, userId, role) => {
-    const token = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
-        expiresIn: '30d',
-    });
+  const isProduction = process.env.NODE_ENV === 'production';
+  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
 
-    res.cookie('jwt', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
-        sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
+  const token = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+    expiresIn,
+  });
 
-    return token;
+  res.cookie('jwt', token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: getTokenMaxAge(),
+  });
+
+  return token;
 };
 
 export default generateToken;

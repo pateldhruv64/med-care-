@@ -5,6 +5,15 @@ import Card, { CardHeader, CardTitle } from '../ui/Card';
 import Badge from '../ui/Badge';
 import DashboardStatCard from './DashboardStatCard';
 
+const formatDate = (value) => {
+  if (!value) return 'N/A';
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'N/A';
+
+  return parsed.toLocaleDateString();
+};
+
 const PatientDashboard = () => {
   const [stats, setStats] = useState({
     upcoming: 0,
@@ -75,7 +84,7 @@ const PatientDashboard = () => {
         <Badge variant="brand">Patient Insights</Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5">
         <DashboardStatCard
           title="Upcoming Appointments"
           value={stats.upcoming}
@@ -107,7 +116,40 @@ const PatientDashboard = () => {
           <CardTitle>My Prescriptions</CardTitle>
         </CardHeader>
 
-        <div className="overflow-x-auto scrollbar-soft">
+        <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+          {prescriptions.length === 0 ? (
+            <div className="px-5 py-10 text-center text-slate-500 dark:text-slate-400">
+              No prescriptions found.
+            </div>
+          ) : (
+            prescriptions.map((prescription) => (
+              <div
+                key={prescription._id}
+                className="px-5 py-4 space-y-2.5 bg-white dark:bg-slate-900"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 leading-snug">
+                    Dr. {prescription.doctor?.firstName}{' '}
+                    {prescription.doctor?.lastName}
+                  </p>
+                  <Badge variant="info" className="shrink-0">
+                    {prescription.medicines.length} meds
+                  </Badge>
+                </div>
+
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {formatDate(prescription.createdAt)}
+                </p>
+
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {prescription.diagnosis || 'No diagnosis provided.'}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto scrollbar-soft">
           <table className="w-full text-left">
             <thead className="bg-slate-50/90 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800">
               <tr>
@@ -137,7 +179,7 @@ const PatientDashboard = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                    {new Date(pres.createdAt).toLocaleDateString()}
+                    {formatDate(pres.createdAt)}
                   </td>
                   <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                     {pres.diagnosis}

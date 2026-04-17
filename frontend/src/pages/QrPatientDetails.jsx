@@ -1,17 +1,61 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Calendar, Clock3, FlaskConical, HeartPulse, Pill, ShieldCheck, User } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  Clock3,
+  FlaskConical,
+  HeartPulse,
+  Pill,
+  ShieldCheck,
+  User,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import api from '../utils/axiosConfig';
 
 const inFlightQrDetailRequests = new Map();
 
+const readTokenFromUrl = () => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const hashValue = window.location.hash?.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash || '';
+  const hashParams = new URLSearchParams(hashValue);
+  const hashToken = hashParams.get('token');
+
+  if (hashToken) {
+    return hashToken;
+  }
+
+  const searchParams = new URLSearchParams(window.location.search || '');
+  return searchParams.get('token') || '';
+};
+
+const clearTokenFromBrowserUrl = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.delete('token');
+  currentUrl.hash = '';
+
+  window.history.replaceState(
+    {},
+    document.title,
+    `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
+  );
+};
+
 const statusBadgeClasses = {
-  Pending: 'bg-yellow-100 text-yellow-700',
-  Confirmed: 'bg-green-100 text-green-700',
-  Completed: 'bg-blue-100 text-blue-700',
-  Cancelled: 'bg-red-100 text-red-700',
-  Ordered: 'bg-orange-100 text-orange-700',
+  'Pending': 'bg-yellow-100 text-yellow-700',
+  'Confirmed': 'bg-green-100 text-green-700',
+  'Completed': 'bg-blue-100 text-blue-700',
+  'Cancelled': 'bg-red-100 text-red-700',
+  'Ordered': 'bg-orange-100 text-orange-700',
   'In Progress': 'bg-indigo-100 text-indigo-700',
 };
 
@@ -24,7 +68,10 @@ const getFriendlyError = (error) => {
   }
 
   if (status === 404) {
-    return message || 'Invalid QR link. Please request a new code from hospital staff.';
+    return (
+      message ||
+      'Invalid QR link. Please request a new code from hospital staff.'
+    );
   }
 
   if (status === 400) {
@@ -61,9 +108,7 @@ const EmptyState = ({ text }) => (
 
 const QrPatientDetails = () => {
   const { patientId } = useParams();
-  const [searchParams] = useSearchParams();
-
-  const token = useMemo(() => searchParams.get('token') || '', [searchParams]);
+  const token = useMemo(() => readTokenFromUrl(), [patientId]);
 
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -76,7 +121,9 @@ const QrPatientDetails = () => {
       if (!token) {
         if (isActive) {
           setPayload(null);
-          setErrorMessage('QR token missing. Please scan the latest QR code again.');
+          setErrorMessage(
+            'QR token missing. Please scan the latest QR code again.',
+          );
           setLoading(false);
         }
         return;
@@ -88,15 +135,15 @@ const QrPatientDetails = () => {
           setErrorMessage('');
         }
 
+        clearTokenFromBrowserUrl();
+
         const requestKey = `${patientId}:${token}`;
 
         let requestPromise = inFlightQrDetailRequests.get(requestKey);
 
         if (!requestPromise) {
           requestPromise = api
-            .get(`/qr-share/patients/${patientId}/details`, {
-              params: { token },
-            })
+            .post(`/qr-share/patients/${patientId}/details`, { token })
             .then((response) => response.data)
             .finally(() => {
               inFlightQrDetailRequests.delete(requestKey);
@@ -137,8 +184,12 @@ const QrPatientDetails = () => {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white border border-slate-100 rounded-xl shadow-sm px-8 py-10 text-center">
           <div className="mx-auto h-10 w-10 rounded-full border-2 border-slate-300 border-t-cyan-500 animate-spin" />
-          <p className="mt-4 text-slate-600 font-medium">Loading secure patient details...</p>
-          <p className="text-sm text-slate-500 mt-1">Please wait, token is being validated.</p>
+          <p className="mt-4 text-slate-600 font-medium">
+            Loading secure patient details...
+          </p>
+          <p className="text-sm text-slate-500 mt-1">
+            Please wait, token is being validated.
+          </p>
         </div>
       </div>
     );
@@ -151,7 +202,9 @@ const QrPatientDetails = () => {
           <div className="flex items-start gap-3">
             <AlertTriangle className="text-red-500 mt-0.5" />
             <div>
-              <h1 className="text-lg font-bold text-slate-800">Unable to open this QR link</h1>
+              <h1 className="text-lg font-bold text-slate-800">
+                Unable to open this QR link
+              </h1>
               <p className="text-sm text-slate-600 mt-1">{errorMessage}</p>
               <p className="text-xs text-slate-500 mt-3">
                 Ask hospital staff to generate a new secure QR code.
@@ -167,7 +220,14 @@ const QrPatientDetails = () => {
     return null;
   }
 
-  const { patient, medicalHistory, prescriptions, labReports, appointments, meta } = payload;
+  const {
+    patient,
+    medicalHistory,
+    prescriptions,
+    labReports,
+    appointments,
+    meta,
+  } = payload;
 
   return (
     <div className="min-h-screen bg-slate-50 py-6 px-4 md:py-10">
@@ -181,7 +241,12 @@ const QrPatientDetails = () => {
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-cyan-100 text-cyan-700 font-bold flex items-center justify-center text-lg overflow-hidden">
                 {patient.profileImage ? (
-                  <img src={patient.profileImage} alt="Patient" className="w-full h-full object-cover" crossOrigin="anonymous" />
+                  <img
+                    src={patient.profileImage}
+                    alt="Patient"
+                    className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
+                  />
                 ) : (
                   `${patient.firstName?.[0] || ''}${patient.lastName?.[0] || ''}`
                 )}
@@ -201,7 +266,8 @@ const QrPatientDetails = () => {
             </div>
           </div>
           <p className="text-xs text-slate-500 mt-4">
-            Token consumed at {formatDate(meta?.consumedAt, true)} • Max {meta?.sectionLimit || 20} latest records per section
+            Token consumed at {formatDate(meta?.consumedAt, true)} • Max{' '}
+            {meta?.sectionLimit || 20} latest records per section
           </p>
         </div>
 
@@ -209,23 +275,33 @@ const QrPatientDetails = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-slate-500">Email Address</p>
-              <p className="font-medium text-slate-800">{patient.email || 'N/A'}</p>
+              <p className="font-medium text-slate-800">
+                {patient.email || 'N/A'}
+              </p>
             </div>
             <div>
               <p className="text-slate-500">Phone Number</p>
-              <p className="font-medium text-slate-800">{patient.phone || 'N/A'}</p>
+              <p className="font-medium text-slate-800">
+                {patient.phone || 'N/A'}
+              </p>
             </div>
             <div>
               <p className="text-slate-500">Gender</p>
-              <p className="font-medium text-slate-800">{patient.gender || 'N/A'}</p>
+              <p className="font-medium text-slate-800">
+                {patient.gender || 'N/A'}
+              </p>
             </div>
             <div>
               <p className="text-slate-500">Date of Birth</p>
-              <p className="font-medium text-slate-800">{formatDate(patient.dateOfBirth)}</p>
+              <p className="font-medium text-slate-800">
+                {formatDate(patient.dateOfBirth)}
+              </p>
             </div>
             <div>
               <p className="text-slate-500">Registered On</p>
-              <p className="font-medium text-slate-800">{formatDate(patient.createdAt)}</p>
+              <p className="font-medium text-slate-800">
+                {formatDate(patient.createdAt)}
+              </p>
             </div>
           </div>
         </SectionCard>
@@ -236,9 +312,14 @@ const QrPatientDetails = () => {
           ) : (
             <div className="space-y-3">
               {medicalHistory.map((record) => (
-                <div key={record._id} className="border border-slate-100 rounded-lg p-4 bg-slate-50">
+                <div
+                  key={record._id}
+                  className="border border-slate-100 rounded-lg p-4 bg-slate-50"
+                >
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-slate-800">{record.title}</p>
+                    <p className="font-semibold text-slate-800">
+                      {record.title}
+                    </p>
                     <span className="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 text-xs font-medium">
                       {record.type}
                     </span>
@@ -246,10 +327,14 @@ const QrPatientDetails = () => {
                       {record.severity}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-600 mt-2">{record.description || 'No description provided.'}</p>
+                  <p className="text-sm text-slate-600 mt-2">
+                    {record.description || 'No description provided.'}
+                  </p>
                   <p className="text-xs text-slate-500 mt-2">
                     Recorded on {formatDate(record.dateRecorded)}
-                    {record.addedBy?.firstName ? ` • By Dr. ${record.addedBy.firstName} ${record.addedBy.lastName}` : ''}
+                    {record.addedBy?.firstName
+                      ? ` • By Dr. ${record.addedBy.firstName} ${record.addedBy.lastName}`
+                      : ''}
                   </p>
                 </div>
               ))}
@@ -263,9 +348,14 @@ const QrPatientDetails = () => {
           ) : (
             <div className="space-y-4">
               {prescriptions.map((prescription) => (
-                <div key={prescription._id} className="border border-slate-100 rounded-lg p-4">
+                <div
+                  key={prescription._id}
+                  className="border border-slate-100 rounded-lg p-4"
+                >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <p className="font-semibold text-slate-800">Diagnosis: {prescription.diagnosis}</p>
+                    <p className="font-semibold text-slate-800">
+                      Diagnosis: {prescription.diagnosis}
+                    </p>
                     <p className="text-xs text-slate-500">
                       {formatDate(prescription.createdAt)}
                       {prescription.doctor?.firstName
@@ -280,14 +370,21 @@ const QrPatientDetails = () => {
                           key={`${prescription._id}-${index}`}
                           className="px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700 text-xs font-medium"
                         >
-                          {medicine.name} • {medicine.dosage} • {medicine.duration}
+                          {medicine.name} • {medicine.dosage} •{' '}
+                          {medicine.duration}
                         </span>
                       ))
                     ) : (
-                      <span className="text-sm text-slate-500">No medicines listed.</span>
+                      <span className="text-sm text-slate-500">
+                        No medicines listed.
+                      </span>
                     )}
                   </div>
-                  {prescription.notes && <p className="text-sm text-slate-600 mt-3">Notes: {prescription.notes}</p>}
+                  {prescription.notes && (
+                    <p className="text-sm text-slate-600 mt-3">
+                      Notes: {prescription.notes}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -302,18 +399,32 @@ const QrPatientDetails = () => {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-3 py-2 font-semibold text-slate-600">Test</th>
-                    <th className="px-3 py-2 font-semibold text-slate-600">Category</th>
-                    <th className="px-3 py-2 font-semibold text-slate-600">Status</th>
-                    <th className="px-3 py-2 font-semibold text-slate-600">Doctor</th>
-                    <th className="px-3 py-2 font-semibold text-slate-600">Date</th>
+                    <th className="px-3 py-2 font-semibold text-slate-600">
+                      Test
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-slate-600">
+                      Category
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-slate-600">
+                      Status
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-slate-600">
+                      Doctor
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-slate-600">
+                      Date
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {labReports.map((report) => (
                     <tr key={report._id}>
-                      <td className="px-3 py-3 text-slate-800">{report.testName}</td>
-                      <td className="px-3 py-3 text-slate-600">{report.testCategory}</td>
+                      <td className="px-3 py-3 text-slate-800">
+                        {report.testName}
+                      </td>
+                      <td className="px-3 py-3 text-slate-600">
+                        {report.testCategory}
+                      </td>
                       <td className="px-3 py-3">
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClasses[report.status] || 'bg-slate-100 text-slate-700'}`}
@@ -322,9 +433,13 @@ const QrPatientDetails = () => {
                         </span>
                       </td>
                       <td className="px-3 py-3 text-slate-600">
-                        {report.doctor?.firstName ? `Dr. ${report.doctor.firstName} ${report.doctor.lastName}` : 'N/A'}
+                        {report.doctor?.firstName
+                          ? `Dr. ${report.doctor.firstName} ${report.doctor.lastName}`
+                          : 'N/A'}
                       </td>
-                      <td className="px-3 py-3 text-slate-600">{formatDate(report.completedAt || report.createdAt)}</td>
+                      <td className="px-3 py-3 text-slate-600">
+                        {formatDate(report.completedAt || report.createdAt)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -339,7 +454,10 @@ const QrPatientDetails = () => {
           ) : (
             <div className="space-y-3">
               {appointments.map((appointment) => (
-                <div key={appointment._id} className="border border-slate-100 rounded-lg p-4 bg-slate-50">
+                <div
+                  key={appointment._id}
+                  className="border border-slate-100 rounded-lg p-4 bg-slate-50"
+                >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <p className="font-semibold text-slate-800">
                       {appointment.doctor?.firstName
@@ -353,10 +471,19 @@ const QrPatientDetails = () => {
                     </span>
                   </div>
                   <div className="text-sm text-slate-600 mt-2 space-y-1">
-                    <p className="inline-flex items-center gap-1"><Calendar size={14} /> {formatDate(appointment.appointmentDate, true)}</p>
-                    <p><span className="font-medium">Reason:</span> {appointment.reason}</p>
+                    <p className="inline-flex items-center gap-1">
+                      <Calendar size={14} />{' '}
+                      {formatDate(appointment.appointmentDate, true)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Reason:</span>{' '}
+                      {appointment.reason}
+                    </p>
                     {appointment.doctor?.doctorDepartment && (
-                      <p><span className="font-medium">Department:</span> {appointment.doctor.doctorDepartment}</p>
+                      <p>
+                        <span className="font-medium">Department:</span>{' '}
+                        {appointment.doctor.doctorDepartment}
+                      </p>
                     )}
                   </div>
                 </div>

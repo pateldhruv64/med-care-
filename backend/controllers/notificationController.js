@@ -55,8 +55,24 @@ const markAllAsRead = async (req, res) => {
 // @route   POST /api/notifications
 const createNotification = async (req, res) => {
   const { userId, title, message, type, link } = req.body;
+
+  if (!title || !message) {
+    res.status(400);
+    throw new Error('Title and message are required');
+  }
+
+  const targetUserId = userId || req.user._id;
+  if (
+    userId &&
+    req.user.role !== 'Admin' &&
+    String(targetUserId) !== String(req.user._id)
+  ) {
+    res.status(403);
+    throw new Error('Only Admin can create notifications for other users');
+  }
+
   const notif = await Notification.create({
-    user: userId || req.user._id,
+    user: targetUserId,
     title,
     message,
     type: type || 'general',

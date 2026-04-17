@@ -1,19 +1,41 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Bell, Search, Sun, Moon, Menu } from 'lucide-react';
+import {
+  Bell,
+  Search,
+  Sun,
+  Moon,
+  Menu,
+  Home,
+  CalendarDays,
+  HeartPulse,
+  FileText,
+  MessageSquare,
+} from 'lucide-react';
 import Sidebar from './Sidebar';
 import GlobalSearch from '../common/GlobalSearch';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import { useTheme } from '../../context/ThemeContext';
 import { useSocket } from '../../context/SocketContext';
+import { useAuth } from '../../context/AuthContext';
+
+const PATIENT_MOBILE_NAV_ITEMS = [
+  { label: 'Home', path: '/dashboard', icon: Home },
+  { label: 'Appointments', path: '/appointments', icon: CalendarDays },
+  { label: 'Records', path: '/records', icon: HeartPulse },
+  { label: 'Bills', path: '/bills', icon: FileText },
+  { label: 'Chat', path: '/chat', icon: MessageSquare },
+];
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { notificationCount } = useSocket();
+  const { notificationCount, messageCount } = useSocket();
+  const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { darkMode, toggleDarkMode } = useTheme();
+  const isPatient = user?.role === 'Patient';
 
   useEffect(() => {
     const handler = (e) => {
@@ -95,9 +117,45 @@ const Layout = () => {
           </Button>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 scrollbar-soft">
+        <main
+          className={`flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 scrollbar-soft ${
+            isPatient ? 'pb-24 lg:pb-8' : ''
+          }`}
+        >
           <Outlet />
         </main>
+
+        {isPatient ? (
+          <nav
+            className="fixed inset-x-3 bottom-3 z-30 lg:hidden ui-card-glass px-2 py-1.5 flex items-center gap-1"
+            style={{
+              paddingBottom: 'max(0.35rem, env(safe-area-inset-bottom))',
+            }}
+          >
+            {PATIENT_MOBILE_NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `relative flex-1 min-w-0 rounded-xl px-2 py-2 text-[11px] font-semibold transition-colors flex flex-col items-center justify-center gap-1 ${
+                    isActive
+                      ? 'bg-cyan-500 text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                  }`
+                }
+              >
+                <item.icon size={16} />
+                <span className="truncate">{item.label}</span>
+
+                {item.path === '/chat' && messageCount > 0 ? (
+                  <span className="absolute top-1 right-3 min-w-[1rem] h-4 px-1 text-[9px] rounded-full bg-rose-500 text-white font-bold flex items-center justify-center">
+                    {messageCount > 9 ? '9+' : messageCount}
+                  </span>
+                ) : null}
+              </NavLink>
+            ))}
+          </nav>
+        ) : null}
       </div>
 
       <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />

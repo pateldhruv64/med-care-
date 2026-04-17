@@ -10,11 +10,28 @@ import {
   AlertCircle,
   TrendingUp,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../utils/axiosConfig';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 import DashboardStatCard from './DashboardStatCard';
+
+const formatAppointmentTime = (value) => {
+  if (!value) {
+    return 'No time set';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'No time set';
+  }
+
+  return parsed.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const ReceptionistDashboard = () => {
   const [stats, setStats] = useState({
@@ -29,6 +46,7 @@ const ReceptionistDashboard = () => {
   const [todayAppts, setTodayAppts] = useState([]);
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [payingInvoiceId, setPayingInvoiceId] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,11 +61,18 @@ const ReceptionistDashboard = () => {
         const patients = patRes.data;
         const invoices = invRes.data;
 
-        const today = new Date().toDateString();
+        const now = new Date();
+        const today = now.toDateString();
 
-        const todayAppointments = appointments.filter(
-          (a) => new Date(a.date).toDateString() === today,
-        );
+        const todayAppointments = appointments.filter((a) => {
+          if (!a.appointmentDate) return false;
+
+          const appointmentDate = new Date(a.appointmentDate);
+          return (
+            !Number.isNaN(appointmentDate.getTime()) &&
+            appointmentDate.toDateString() === today
+          );
+        });
 
         const pending = appointments.filter(
           (a) => a.status === 'Pending' || a.status === 'Confirmed',
@@ -88,13 +113,23 @@ const ReceptionistDashboard = () => {
     fetchData();
   }, []);
 
-  const markAsPaid = async (id) => {
+  const markAsPaid = async (invoice) => {
+    const shouldProceed = window.confirm(
+      `Mark invoice #${invoice._id.slice(-6)} as paid?`,
+    );
+
+    if (!shouldProceed) {
+      return;
+    }
+
+    setPayingInvoiceId(invoice._id);
+
     try {
-      await api.put(`/invoices/${id}/pay`);
+      await api.put(`/invoices/${invoice._id}/pay`);
       toast.success('Invoice marked as Paid!');
       setRecentInvoices(
         recentInvoices.map((inv) =>
-          inv._id === id ? { ...inv, status: 'Paid' } : inv,
+          inv._id === invoice._id ? { ...inv, status: 'Paid' } : inv,
         ),
       );
       setStats((prev) => ({
@@ -102,7 +137,9 @@ const ReceptionistDashboard = () => {
         unpaidBills: Math.max(0, prev.unpaidBills - 1),
       }));
     } catch (error) {
-      toast.error('Failed to update');
+      toast.error(error.response?.data?.message || 'Failed to update');
+    } finally {
+      setPayingInvoiceId('');
     }
   };
 
@@ -188,8 +225,8 @@ const ReceptionistDashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <a
-          href="/appointments"
+        <Link
+          to="/appointments"
           className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-blue-200 transition-all flex items-center gap-4 group"
         >
           <div className="p-3 rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
@@ -201,9 +238,9 @@ const ReceptionistDashboard = () => {
               View, create & manage appointments
             </p>
           </div>
-        </a>
-        <a
-          href="/patients"
+        </Link>
+        <Link
+          to="/patients"
           className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-purple-200 transition-all flex items-center gap-4 group"
         >
           <div className="p-3 rounded-lg bg-purple-50 group-hover:bg-purple-100 transition-colors">
@@ -213,9 +250,9 @@ const ReceptionistDashboard = () => {
             <h3 className="font-bold text-slate-800">Register Patient</h3>
             <p className="text-xs text-slate-500">Add new patients to system</p>
           </div>
-        </a>
-        <a
-          href="/billing"
+        </Link>
+        <Link
+          to="/billing"
           className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-green-200 transition-all flex items-center gap-4 group"
         >
           <div className="p-3 rounded-lg bg-green-50 group-hover:bg-green-100 transition-colors">
@@ -227,7 +264,7 @@ const ReceptionistDashboard = () => {
               Generate bills for patients
             </p>
           </div>
-        </a>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -257,7 +294,7 @@ const ReceptionistDashboard = () => {
                     </p>
                     <p className="text-xs text-slate-500">
                       Dr. {appt.doctor?.firstName} {appt.doctor?.lastName} •{' '}
-                      {appt.time || 'No time set'}
+                      {formatAppointmentTime(appt.appointmentDate)}
                     </p>
                   </div>
                   <span
@@ -325,10 +362,11 @@ const ReceptionistDashboard = () => {
                     </span>
                     {inv.status === 'Unpaid' && (
                       <button
-                        onClick={() => markAsPaid(inv._id)}
-                        className="px-2 py-1 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600 transition-colors"
+                        onClick={() => markAsPaid(inv)}
+                        disabled={payingInvoiceId === inv._id}
+                        className="px-2 py-1 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        Pay
+                        {payingInvoiceId === inv._id ? 'Paying...' : 'Pay'}
                       </button>
                     )}
                   </div>

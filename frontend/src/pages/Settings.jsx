@@ -203,32 +203,36 @@ const Settings = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <SettingsIcon className="w-7 h-7 text-cyan-500" />
-        <h1 className="text-2xl font-bold text-slate-800">Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
+          Settings
+        </h1>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Sidebar Tabs */}
-        <div className="w-56 shrink-0">
+        <div className="w-full lg:w-56 shrink-0">
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-l-4 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50 border-l-4 border-transparent'
-                }`}
-                style={activeTab === tab.id ? activeTabStyle : undefined}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
+            <div className="grid grid-cols-2 gap-2 p-2 sm:grid-cols-4 lg:flex lg:flex-col lg:gap-0 lg:p-0">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full min-w-0 flex items-center justify-center lg:justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 text-center lg:text-left text-sm font-medium rounded-lg lg:rounded-none transition-colors border border-transparent ${
+                    activeTab === tab.id
+                      ? 'shadow-sm lg:border-l-4 lg:border-b-0'
+                      : 'text-slate-600 hover:bg-slate-50 lg:border-l-4 lg:border-b-0'
+                  }`}
+                  style={activeTab === tab.id ? activeTabStyle : undefined}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* User Info Card */}
-          <div className="mt-4 bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <div className="mt-3 lg:mt-4 bg-white rounded-xl shadow-sm border border-slate-100 p-4">
             <div className="flex items-center gap-3">
               {user?.profileImage ? (
                 <img
@@ -259,7 +263,7 @@ const Settings = () => {
             key={activeTab}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm border border-slate-100 p-6"
+            className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6"
           >
             {activeTab === 'profile' && (
               <div>
@@ -272,7 +276,7 @@ const Settings = () => {
                   <label className="block text-sm text-slate-600 mb-3 font-medium">
                     Profile Picture
                   </label>
-                  <div className="flex items-start gap-6">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                     {/* Avatar Preview */}
                     <div className="relative group">
                       {user?.profileImage ? (
@@ -304,7 +308,7 @@ const Settings = () => {
                       onDragOver={handleDrag}
                       onDrop={handleDrop}
                       onClick={() => fileInputRef.current?.click()}
-                      className={`flex-1 max-w-sm border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                      className={`w-full sm:flex-1 sm:max-w-sm border-2 border-dashed rounded-xl p-5 sm:p-6 text-center cursor-pointer transition-all ${
                         dragActive
                           ? 'border-cyan-400 bg-cyan-50'
                           : 'border-slate-200 hover:border-cyan-300 hover:bg-slate-50'
@@ -347,9 +351,9 @@ const Settings = () => {
                 {/* Profile Form */}
                 <form
                   onSubmit={handleProfileUpdate}
-                  className="space-y-4 max-w-lg"
+                  className="space-y-4 max-w-2xl"
                 >
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-slate-600 mb-1 font-medium">
                         First Name
@@ -408,7 +412,7 @@ const Settings = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+                    className="w-full sm:w-auto bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
                   >
                     {loading ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -423,7 +427,7 @@ const Settings = () => {
                 </h2>
                 <form
                   onSubmit={handlePasswordChange}
-                  className="space-y-4 max-w-lg"
+                  className="space-y-4 max-w-2xl"
                 >
                   <div>
                     <label className="block text-sm text-slate-600 mb-1 font-medium">
@@ -479,7 +483,7 @@ const Settings = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+                    className="w-full sm:w-auto bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
                   >
                     {loading ? 'Changing...' : 'Change Password'}
                   </button>
@@ -513,7 +517,7 @@ const Settings = () => {
                   ].map((item, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100"
+                      className="flex items-start justify-between gap-3 p-4 bg-slate-50 rounded-lg border border-slate-100"
                     >
                       <div>
                         <p className="font-medium text-slate-800 text-sm">
@@ -527,7 +531,7 @@ const Settings = () => {
                           defaultChecked
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 shrink-0"></div>
                       </label>
                     </div>
                   ))}
@@ -582,7 +586,7 @@ const Settings = () => {
                   </div>
 
                   {darkMode ? (
-                    <div className="rounded-lg border border-amber-400/35 bg-slate-900/88 px-3 py-2 flex items-center justify-between gap-3">
+                    <div className="rounded-lg border border-amber-400/35 bg-slate-900/88 px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <p className="text-[11px] sm:text-xs text-amber-300 font-medium">
                         Abhi dark mode ON hai — preset ka visual effect light
                         mode me dikhega.
@@ -655,7 +659,7 @@ const Settings = () => {
                       );
                     })}
 
-                    <label className="ml-2 inline-flex items-center gap-2 text-xs text-slate-600 font-medium">
+                    <label className="inline-flex items-center gap-2 text-xs text-slate-600 font-medium">
                       Custom
                       <input
                         type="color"

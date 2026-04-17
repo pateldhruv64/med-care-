@@ -15,9 +15,6 @@ const Register = () => {
     phone: '',
     dateOfBirth: '',
     gender: 'Male',
-    role: 'Patient',
-    adminSecret: '',
-    doctorDepartment: '',
   });
 
   const { register } = useAuth();
@@ -29,12 +26,32 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords don't match");
       return;
     }
+
+    const passwordPolicy =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!passwordPolicy.test(formData.password)) {
+      toast.error(
+        'Password must be at least 8 characters and include uppercase, lowercase, number, and special character',
+      );
+      return;
+    }
+
     try {
-      await register(formData);
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        role: 'Patient',
+      });
       toast.success('Registration Successful');
       navigate('/dashboard');
     } catch (error) {
@@ -63,6 +80,9 @@ const Register = () => {
           </h2>
           <p className="text-slate-500 dark:text-slate-400">
             Join MedCare System
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+            Staff accounts are created by administrators.
           </p>
         </div>
 
@@ -159,70 +179,6 @@ const Register = () => {
                 <option value="Other">Other</option>
               </select>
             </div>
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 mb-2 text-sm font-medium">
-                Role
-              </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="ui-input"
-              >
-                <option value="Patient">Patient</option>
-                <option value="Doctor">Doctor</option>
-                <option value="Receptionist">Receptionist</option>
-                <option value="Pharmacist">Pharmacist</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-            {formData.role !== 'Patient' && (
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-2 text-sm font-medium">
-                  Admin Secret Key
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
-                  <input
-                    name="adminSecret"
-                    type="password"
-                    value={formData.adminSecret}
-                    onChange={handleChange}
-                    className="ui-input pl-10"
-                    required
-                    placeholder="Required for non-patient roles"
-                  />
-                </div>
-              </div>
-            )}
-            {formData.role === 'Doctor' && (
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-2 text-sm font-medium">
-                  Department
-                </label>
-                <select
-                  name="doctorDepartment"
-                  value={formData.doctorDepartment}
-                  onChange={handleChange}
-                  className="ui-input"
-                  required
-                >
-                  <option value="">Select Department</option>
-                  <option value="Cardiology">Cardiology</option>
-                  <option value="Neurology">Neurology</option>
-                  <option value="Orthopedics">Orthopedics</option>
-                  <option value="Pediatrics">Pediatrics</option>
-                  <option value="Dermatology">Dermatology</option>
-                  <option value="Ophthalmology">Ophthalmology</option>
-                  <option value="ENT">ENT</option>
-                  <option value="General Medicine">General Medicine</option>
-                  <option value="Surgery">Surgery</option>
-                  <option value="Gynecology">Gynecology</option>
-                  <option value="Psychiatry">Psychiatry</option>
-                  <option value="Radiology">Radiology</option>
-                </select>
-              </div>
-            )}
             <div>
               <label className="block text-slate-700 dark:text-slate-300 mb-2 text-sm font-medium">
                 Password
