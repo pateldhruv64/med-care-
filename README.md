@@ -45,14 +45,14 @@ It includes role-aware access, secure authentication, real-time updates, and pro
 
 ## 🧱 Tech stack
 
-| Layer | Stack |
-|---|---|
+| Layer    | Stack                                                                     |
+| -------- | ------------------------------------------------------------------------- |
 | Frontend | React 18, Vite, React Router, Axios, Framer Motion, TailwindCSS, Toastify |
-| Backend | Node.js, Express, Mongoose, JWT, Helmet, CORS, Morgan, Compression |
-| Realtime | Socket.IO (server + client) |
-| Media | Multer + Cloudinary |
-| Security | express-rate-limit, express-validator, role auth guards |
-| DevOps | GitHub Actions CI (backend smoke + frontend build) |
+| Backend  | Node.js, Express, Mongoose, JWT, Helmet, CORS, Morgan, Compression        |
+| Realtime | Socket.IO (server + client)                                               |
+| Media    | Multer + Cloudinary                                                       |
+| Security | express-rate-limit, express-validator, role auth guards                   |
+| DevOps   | GitHub Actions CI (backend smoke + frontend build)                        |
 
 ---
 
