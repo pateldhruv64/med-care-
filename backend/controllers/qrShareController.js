@@ -29,21 +29,6 @@ const getQrPublicBaseUrl = () => {
   return normalizeBaseUrl(configuredUrl);
 };
 
-const readQrToken = (req) => {
-  const bodyToken = req.body?.token;
-  const queryToken = req.query?.token;
-
-  if (typeof bodyToken === 'string' && bodyToken.trim()) {
-    return bodyToken.trim();
-  }
-
-  if (typeof queryToken === 'string' && queryToken.trim()) {
-    return queryToken.trim();
-  }
-
-  return '';
-};
-
 const hashQrToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
@@ -86,7 +71,7 @@ const generatePatientQrShareLink = async (req, res) => {
     expiresAt,
   });
 
-  const shareUrl = `${getQrPublicBaseUrl()}/qr-patient/${patient._id}#token=${rawToken}`;
+  const shareUrl = `${getQrPublicBaseUrl()}/qr-patient/${patient._id}?token=${rawToken}`;
 
   await logActivity({
     userId: req.user._id,
@@ -107,45 +92,35 @@ const generatePatientQrShareLink = async (req, res) => {
 };
 
 // @desc    Resolve a secure QR share link and return patient details
-// @route   POST /api/qr-share/patients/:patientId/details  { token }
+// @route   GET /api/qr-share/patients/:patientId/details?token=<token>
 // @access  Public (token-based)
 const resolvePatientQrShareDetails = async (req, res) => {
   const { patientId } = req.params;
-  const token = readQrToken(req);
+  const { token } = req.query;
 
-  if (!token) {
+  if (!token || typeof token !== 'string') {
     res.status(400);
-    throw new Error('Invalid QR link');
+    throw new Error('QR token is required');
+  }
+
+  const patient = await User.findById(patientId)
+    .select(
+      'firstName lastName email phone gender dateOfBirth profileImage patientId createdAt role',
+    )
+    .lean();
+
+  if (!patient || patient.role !== 'Patient') {
+    res.status(404);
+    throw new Error('Patient not found');
   }
 
   const now = new Date();
   const tokenHash = hashQrToken(token);
 
-  const existingToken = await QrShareToken.findOne({
-    patient: patientId,
-    tokenHash,
-  })
-    .select('_id usedAt expiresAt patient')
-    .lean();
-
-  if (!existingToken) {
-    res.status(404);
-    throw new Error('Invalid QR link');
-  }
-
-  if (existingToken.usedAt) {
-    res.status(410);
-    throw new Error('This QR link has already been used');
-  }
-
-  if (existingToken.expiresAt <= now) {
-    res.status(410);
-    throw new Error('This QR link has expired');
-  }
-
   const consumedToken = await QrShareToken.findOneAndUpdate(
     {
-      _id: existingToken._id,
+      patient: patientId,
+      tokenHash,
       usedAt: null,
       expiresAt: { $gt: now },
     },
@@ -160,21 +135,30 @@ const resolvePatientQrShareDetails = async (req, res) => {
   );
 
   if (!consumedToken) {
+    const existingToken = await QrShareToken.findOne({
+      patient: patientId,
+      tokenHash,
+    }).lean();
+
+    if (!existingToken) {
+      res.status(404);
+      throw new Error('Invalid QR link');
+    }
+
+    if (existingToken.usedAt) {
+      res.status(410);
+      throw new Error('This QR link has already been used');
+    }
+
+    if (existingToken.expiresAt <= now) {
+      res.status(410);
+      throw new Error('This QR link has expired');
+    }
+
     res.status(409);
     throw new Error(
       'Unable to validate QR link. Please generate a new QR code.',
     );
-  }
-
-  const patient = await User.findById(consumedToken.patient)
-    .select(
-      'firstName lastName email phone gender dateOfBirth profileImage patientId createdAt role',
-    )
-    .lean();
-
-  if (!patient || patient.role !== 'Patient') {
-    res.status(404);
-    throw new Error('Invalid QR link');
   }
 
   const [medicalHistory, prescriptions, labReports, appointments] =

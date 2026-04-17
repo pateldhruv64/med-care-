@@ -64,4 +64,48 @@ const loginValidationRules = [
     .withMessage('Password is required'),
 ];
 
-export { loginValidationRules, registerValidationRules };
+const createStaffValidationRules = [
+  nameValidation('firstName', 'First name'),
+  nameValidation('lastName', 'Last name'),
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Email must be valid')
+    .normalizeEmail(),
+  passwordValidation,
+  body('role')
+    .trim()
+    .notEmpty()
+    .withMessage('Role is required')
+    .isIn(['Doctor', 'Receptionist', 'Pharmacist'])
+    .withMessage('Role must be Doctor, Receptionist, or Pharmacist'),
+  body('gender')
+    .optional({ values: 'falsy' })
+    .isIn(['Male', 'Female', 'Other'])
+    .withMessage('Gender must be Male, Female, or Other'),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .trim()
+    .matches(/^[0-9+\-\s()]{7,20}$/)
+    .withMessage('Phone number format is invalid'),
+  body('dateOfBirth')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .withMessage('Date of birth must be a valid date')
+    .toDate(),
+  body('doctorDepartment')
+    .if(body('role').equals('Doctor'))
+    .trim()
+    .notEmpty()
+    .withMessage('Doctor department is required for Doctor role')
+    .isLength({ min: 2, max: 80 })
+    .withMessage('Doctor department must be between 2 and 80 characters'),
+];
+
+export {
+  loginValidationRules,
+  registerValidationRules,
+  createStaffValidationRules,
+};

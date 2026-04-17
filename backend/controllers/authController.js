@@ -111,6 +111,81 @@ const registerUser = async (req, res) => {
   }
 };
 
+// @desc    Create staff user account (Admin only)
+// @route   POST /api/users/staff
+// @access  Private (Admin)
+const createStaffUser = async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    role,
+    gender,
+    phone,
+    dateOfBirth,
+    doctorDepartment,
+  } = req.body;
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const allowedRoles = ['Doctor', 'Receptionist', 'Pharmacist'];
+
+  if (!allowedRoles.includes(role)) {
+    res.status(400);
+    throw new Error('Invalid staff role');
+  }
+
+  if (role === 'Doctor' && !String(doctorDepartment || '').trim()) {
+    res.status(400);
+    throw new Error('Doctor department is required for Doctor role');
+  }
+
+  const userExists = await User.findOne({ email: normalizedEmail });
+
+  if (userExists) {
+    res.status(400);
+    throw new Error('User already exists');
+  }
+
+  const staffUser = await User.create({
+    firstName,
+    lastName,
+    email: normalizedEmail,
+    password,
+    role,
+    gender,
+    phone,
+    dateOfBirth,
+    doctorDepartment: role === 'Doctor' ? doctorDepartment : undefined,
+  });
+
+  if (!staffUser) {
+    res.status(400);
+    throw new Error('Invalid staff data');
+  }
+
+  await logActivity({
+    userId: req.user._id,
+    action: 'CREATE',
+    entity: 'User',
+    entityId: staffUser._id,
+    details: `Staff account created: ${staffUser.role} - ${staffUser.firstName} ${staffUser.lastName}`,
+    ipAddress: req.ip,
+  });
+
+  res.status(201).json({
+    _id: staffUser._id,
+    firstName: staffUser.firstName,
+    lastName: staffUser.lastName,
+    email: staffUser.email,
+    role: staffUser.role,
+    phone: staffUser.phone,
+    gender: staffUser.gender,
+    dateOfBirth: staffUser.dateOfBirth,
+    doctorDepartment: staffUser.doctorDepartment,
+  });
+};
+
 // @desc    Logout user / clear cookie
 // @route   POST /api/users/logout
 // @access  Public
@@ -214,6 +289,7 @@ const updateUserProfile = async (req, res) => {
 export {
   authUser,
   registerUser,
+  createStaffUser,
   logoutUser,
   getUserProfile,
   updateUserProfile,

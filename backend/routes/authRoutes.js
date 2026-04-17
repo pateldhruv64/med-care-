@@ -2,11 +2,12 @@ import express from 'express';
 import {
   authUser,
   registerUser,
+  createStaffUser,
   logoutUser,
   getUserProfile,
   updateUserProfile,
 } from '../controllers/authController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, authorize } from '../middleware/authMiddleware.js';
 import { upload, uploadToCloudinary } from '../middleware/uploadMiddleware.js';
 import { validateRequest } from '../middleware/validationMiddleware.js';
 import {
@@ -18,6 +19,7 @@ import logActivity from '../utils/logActivity.js';
 import {
   loginValidationRules,
   registerValidationRules,
+  createStaffValidationRules,
 } from '../validators/authValidators.js';
 
 const router = express.Router();
@@ -28,6 +30,14 @@ router.post(
   registerValidationRules,
   validateRequest,
   registerUser,
+);
+router.post(
+  '/staff',
+  protect,
+  authorize('Admin'),
+  createStaffValidationRules,
+  validateRequest,
+  createStaffUser,
 );
 router.post(
   '/login',

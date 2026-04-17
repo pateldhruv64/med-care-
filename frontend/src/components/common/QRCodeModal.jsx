@@ -27,7 +27,10 @@ const QRCodeModal = ({ isOpen, onClose, patient }) => {
     } catch (error) {
       setQrLink('');
       setExpiresAt('');
-      setErrorMessage(error.response?.data?.message || 'Unable to generate secure QR link. Please try again.');
+      setErrorMessage(
+        error.response?.data?.message ||
+          'Unable to generate secure QR link. Please try again.',
+      );
     } finally {
       setLoadingLink(false);
     }
@@ -89,7 +92,9 @@ const QRCodeModal = ({ isOpen, onClose, patient }) => {
           {loadingLink && (
             <div className="bg-white p-6 rounded-xl border-2 border-slate-100 min-w-[232px] min-h-[232px] flex flex-col items-center justify-center gap-3">
               <div className="h-8 w-8 rounded-full border-2 border-slate-300 border-t-cyan-500 animate-spin" />
-              <p className="text-sm text-slate-500">Generating secure QR link...</p>
+              <p className="text-sm text-slate-500">
+                Generating secure QR link...
+              </p>
             </div>
           )}
 
@@ -136,7 +141,8 @@ const QRCodeModal = ({ isOpen, onClose, patient }) => {
 
                 <p className="text-xs text-amber-600">
                   Single-use secure link • expires in {ttlMinutes} minutes
-                  {expiresAt && ` (${new Date(expiresAt).toLocaleTimeString()})`}
+                  {expiresAt &&
+                    ` (${new Date(expiresAt).toLocaleTimeString()})`}
                 </p>
               </div>
             </>

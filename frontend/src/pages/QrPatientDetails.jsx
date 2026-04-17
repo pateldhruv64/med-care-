@@ -10,45 +10,10 @@ import {
   User,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import api from '../utils/axiosConfig';
 
 const inFlightQrDetailRequests = new Map();
-
-const readTokenFromUrl = () => {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  const hashValue = window.location.hash?.startsWith('#')
-    ? window.location.hash.slice(1)
-    : window.location.hash || '';
-  const hashParams = new URLSearchParams(hashValue);
-  const hashToken = hashParams.get('token');
-
-  if (hashToken) {
-    return hashToken;
-  }
-
-  const searchParams = new URLSearchParams(window.location.search || '');
-  return searchParams.get('token') || '';
-};
-
-const clearTokenFromBrowserUrl = () => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const currentUrl = new URL(window.location.href);
-  currentUrl.searchParams.delete('token');
-  currentUrl.hash = '';
-
-  window.history.replaceState(
-    {},
-    document.title,
-    `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
-  );
-};
 
 const statusBadgeClasses = {
   'Pending': 'bg-yellow-100 text-yellow-700',
@@ -108,7 +73,9 @@ const EmptyState = ({ text }) => (
 
 const QrPatientDetails = () => {
   const { patientId } = useParams();
-  const token = useMemo(() => readTokenFromUrl(), [patientId]);
+  const [searchParams] = useSearchParams();
+
+  const token = useMemo(() => searchParams.get('token') || '', [searchParams]);
 
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -135,15 +102,15 @@ const QrPatientDetails = () => {
           setErrorMessage('');
         }
 
-        clearTokenFromBrowserUrl();
-
         const requestKey = `${patientId}:${token}`;
 
         let requestPromise = inFlightQrDetailRequests.get(requestKey);
 
         if (!requestPromise) {
           requestPromise = api
-            .post(`/qr-share/patients/${patientId}/details`, { token })
+            .get(`/qr-share/patients/${patientId}/details`, {
+              params: { token },
+            })
             .then((response) => response.data)
             .finally(() => {
               inFlightQrDetailRequests.delete(requestKey);

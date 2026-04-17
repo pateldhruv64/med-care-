@@ -16,13 +16,14 @@ const Doctors = () => {
   const [ratings, setRatings] = useState({});
   const [reviewDoctorId, setReviewDoctorId] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newDoctor, setNewDoctor] = useState({
+  const [newStaff, setNewStaff] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
     phone: '',
     gender: 'Male',
+    role: 'Doctor',
     department: '',
   });
 
@@ -60,24 +61,48 @@ const Doctors = () => {
     }
   };
 
-  const handleAddDoctor = async (e) => {
+  const handleAddStaff = async (e) => {
     e.preventDefault();
+
+    const payload = {
+      firstName: newStaff.firstName,
+      lastName: newStaff.lastName,
+      email: newStaff.email,
+      password: newStaff.password,
+      phone: newStaff.phone,
+      gender: newStaff.gender,
+      role: newStaff.role,
+    };
+
+    if (newStaff.role === 'Doctor') {
+      payload.doctorDepartment = newStaff.department;
+    }
+
     try {
-      await api.post('/doctors', newDoctor);
-      toast.success('Doctor added successfully');
+      await api.post('/users/staff', payload);
+      toast.success(`${newStaff.role} added successfully`);
+
+      if (newStaff.role === 'Doctor') {
+        fetchDoctors();
+      } else {
+        toast.info(
+          `${newStaff.role} account created. This page lists doctors only.`,
+        );
+      }
+
       setShowAddModal(false);
-      setNewDoctor({
+      setNewStaff({
         firstName: '',
         lastName: '',
         email: '',
         password: '',
         phone: '',
         gender: 'Male',
+        role: 'Doctor',
         department: '',
       });
-      fetchDoctors();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add doctor');
+      toast.error(error.response?.data?.message || 'Failed to add staff');
     }
   };
 
@@ -116,7 +141,7 @@ const Doctors = () => {
             className="bg-cyan-500 hover:bg-cyan-600 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-cyan-500/20 text-sm"
           >
             <Plus size={18} />
-            <span className="hidden sm:inline">Add Doctor</span>
+            <span className="hidden sm:inline">Add Staff</span>
             <span className="sm:hidden">Add</span>
           </button>
         )}
@@ -245,7 +270,7 @@ const Doctors = () => {
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-slate-800">
-                Add New Doctor
+                Add Staff Account
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -255,18 +280,39 @@ const Doctors = () => {
               </button>
             </div>
             <form
-              onSubmit={handleAddDoctor}
+              onSubmit={handleAddStaff}
               className="grid grid-cols-1 sm:grid-cols-2 gap-4"
             >
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Staff Role
+                </label>
+                <select
+                  className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
+                  value={newStaff.role}
+                  onChange={(e) =>
+                    setNewStaff({
+                      ...newStaff,
+                      role: e.target.value,
+                      department:
+                        e.target.value === 'Doctor' ? newStaff.department : '',
+                    })
+                  }
+                >
+                  <option value="Doctor">Doctor</option>
+                  <option value="Receptionist">Receptionist</option>
+                  <option value="Pharmacist">Pharmacist</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   First Name
                 </label>
                 <input
                   className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
-                  value={newDoctor.firstName}
+                  value={newStaff.firstName}
                   onChange={(e) =>
-                    setNewDoctor({ ...newDoctor, firstName: e.target.value })
+                    setNewStaff({ ...newStaff, firstName: e.target.value })
                   }
                   required
                 />
@@ -277,9 +323,9 @@ const Doctors = () => {
                 </label>
                 <input
                   className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
-                  value={newDoctor.lastName}
+                  value={newStaff.lastName}
                   onChange={(e) =>
-                    setNewDoctor({ ...newDoctor, lastName: e.target.value })
+                    setNewStaff({ ...newStaff, lastName: e.target.value })
                   }
                   required
                 />
@@ -291,9 +337,9 @@ const Doctors = () => {
                 <input
                   type="email"
                   className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
-                  value={newDoctor.email}
+                  value={newStaff.email}
                   onChange={(e) =>
-                    setNewDoctor({ ...newDoctor, email: e.target.value })
+                    setNewStaff({ ...newStaff, email: e.target.value })
                   }
                   required
                 />
@@ -305,9 +351,9 @@ const Doctors = () => {
                 <input
                   type="password"
                   className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
-                  value={newDoctor.password}
+                  value={newStaff.password}
                   onChange={(e) =>
-                    setNewDoctor({ ...newDoctor, password: e.target.value })
+                    setNewStaff({ ...newStaff, password: e.target.value })
                   }
                   required
                   minLength={6}
@@ -319,9 +365,9 @@ const Doctors = () => {
                 </label>
                 <input
                   className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
-                  value={newDoctor.phone}
+                  value={newStaff.phone}
                   onChange={(e) =>
-                    setNewDoctor({ ...newDoctor, phone: e.target.value })
+                    setNewStaff({ ...newStaff, phone: e.target.value })
                   }
                 />
               </div>
@@ -331,9 +377,9 @@ const Doctors = () => {
                 </label>
                 <select
                   className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
-                  value={newDoctor.gender}
+                  value={newStaff.gender}
                   onChange={(e) =>
-                    setNewDoctor({ ...newDoctor, gender: e.target.value })
+                    setNewStaff({ ...newStaff, gender: e.target.value })
                   }
                 >
                   <option value="Male">Male</option>
@@ -341,33 +387,35 @@ const Doctors = () => {
                   <option value="Other">Other</option>
                 </select>
               </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Department
-                </label>
-                <select
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
-                  value={newDoctor.department}
-                  onChange={(e) =>
-                    setNewDoctor({ ...newDoctor, department: e.target.value })
-                  }
-                  required
-                >
-                  <option value="">Select Department</option>
-                  <option value="Cardiology">Cardiology</option>
-                  <option value="Neurology">Neurology</option>
-                  <option value="Orthopedics">Orthopedics</option>
-                  <option value="Pediatrics">Pediatrics</option>
-                  <option value="Dermatology">Dermatology</option>
-                  <option value="Ophthalmology">Ophthalmology</option>
-                  <option value="ENT">ENT</option>
-                  <option value="General Medicine">General Medicine</option>
-                  <option value="Surgery">Surgery</option>
-                  <option value="Gynecology">Gynecology</option>
-                  <option value="Psychiatry">Psychiatry</option>
-                  <option value="Radiology">Radiology</option>
-                </select>
-              </div>
+              {newStaff.role === 'Doctor' && (
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Department
+                  </label>
+                  <select
+                    className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-cyan-500"
+                    value={newStaff.department}
+                    onChange={(e) =>
+                      setNewStaff({ ...newStaff, department: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    <option value="Cardiology">Cardiology</option>
+                    <option value="Neurology">Neurology</option>
+                    <option value="Orthopedics">Orthopedics</option>
+                    <option value="Pediatrics">Pediatrics</option>
+                    <option value="Dermatology">Dermatology</option>
+                    <option value="Ophthalmology">Ophthalmology</option>
+                    <option value="ENT">ENT</option>
+                    <option value="General Medicine">General Medicine</option>
+                    <option value="Surgery">Surgery</option>
+                    <option value="Gynecology">Gynecology</option>
+                    <option value="Psychiatry">Psychiatry</option>
+                    <option value="Radiology">Radiology</option>
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3 mt-6 col-span-2">
                 <button
                   type="button"
@@ -380,7 +428,7 @@ const Doctors = () => {
                   type="submit"
                   className="flex-1 py-3 bg-cyan-600 text-white rounded-lg font-bold hover:bg-cyan-700 transition-colors shadow-lg shadow-cyan-500/20"
                 >
-                  Add Doctor
+                  Add Staff
                 </button>
               </div>
             </form>

@@ -32,16 +32,6 @@ const Attendance = lazy(() => import('./pages/Attendance'));
 const Leaves = lazy(() => import('./pages/Leaves'));
 const Chat = lazy(() => import('./pages/Chat'));
 const QrPatientDetails = lazy(() => import('./pages/QrPatientDetails'));
-const Unauthorized = lazy(() => import('./pages/Unauthorized'));
-
-const STAFF_ROLES = ['Admin', 'Doctor', 'Receptionist', 'Pharmacist'];
-const CLINICAL_ROLES = ['Admin', 'Doctor', 'Receptionist'];
-const PATIENT_DATA_ROLES = ['Admin', 'Doctor', 'Receptionist', 'Pharmacist'];
-const APPOINTMENT_ROLES = ['Admin', 'Doctor', 'Receptionist', 'Patient'];
-const BILLING_ROLES = ['Admin', 'Receptionist', 'Pharmacist', 'Patient'];
-const MEDICAL_RECORD_ROLES = ['Admin', 'Doctor', 'Patient'];
-const PRESCRIPTION_ROLES = ['Admin', 'Doctor', 'Pharmacist', 'Patient'];
-const LAB_REPORT_ROLES = ['Admin', 'Doctor', 'Patient'];
 
 function App() {
   const { user } = useAuth();
@@ -71,82 +61,25 @@ function App() {
           >
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route
-                element={<ProtectedRoute allowedRoles={PATIENT_DATA_ROLES} />}
-              >
-                <Route path="/patients" element={<Patients />} />
-              </Route>
+              <Route path="/patients" element={<Patients />} />
               <Route path="/doctors" element={<Doctors />} />
-
-              <Route
-                element={<ProtectedRoute allowedRoles={APPOINTMENT_ROLES} />}
-              >
-                <Route path="/appointments" element={<Appointments />} />
-              </Route>
-
-              <Route element={<ProtectedRoute allowedRoles={BILLING_ROLES} />}>
-                <Route path="/billing" element={<Billing />} />
-                <Route path="/bills" element={<Billing />} />
-              </Route>
-
-              <Route
-                element={
-                  <ProtectedRoute allowedRoles={['Admin', 'Pharmacist']} />
-                }
-              >
-                <Route path="/pharmacy" element={<Pharmacy />} />
-              </Route>
-
-              <Route
-                element={<ProtectedRoute allowedRoles={MEDICAL_RECORD_ROLES} />}
-              >
-                <Route path="/records" element={<MedicalRecords />} />
-              </Route>
-
-              <Route
-                element={<ProtectedRoute allowedRoles={PRESCRIPTION_ROLES} />}
-              >
-                <Route path="/prescriptions" element={<Prescriptions />} />
-              </Route>
-
+              <Route path="/appointments" element={<Appointments />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/pharmacy" element={<Pharmacy />} />
+              <Route path="/records" element={<MedicalRecords />} />
+              <Route path="/prescriptions" element={<Prescriptions />} />
+              <Route path="/bills" element={<Billing />} />
               <Route path="/settings" element={<Settings />} />
-
-              <Route
-                element={<ProtectedRoute allowedRoles={LAB_REPORT_ROLES} />}
-              >
-                <Route path="/lab-reports" element={<LabReports />} />
-              </Route>
-
-              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
-                <Route path="/reports" element={<Reports />} />
-              </Route>
-
-              <Route element={<ProtectedRoute allowedRoles={CLINICAL_ROLES} />}>
-                <Route path="/beds" element={<BedManagement />} />
-                <Route path="/schedule" element={<DoctorSchedule />} />
-              </Route>
-
+              <Route path="/lab-reports" element={<LabReports />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/beds" element={<BedManagement />} />
+              <Route path="/schedule" element={<DoctorSchedule />} />
               <Route path="/notifications" element={<Notifications />} />
-
-              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
-                <Route path="/activity-log" element={<ActivityLog />} />
-              </Route>
-
-              <Route
-                element={
-                  <ProtectedRoute allowedRoles={['Admin', 'Pharmacist']} />
-                }
-              >
-                <Route path="/inventory-alerts" element={<InventoryAlerts />} />
-              </Route>
-
-              <Route element={<ProtectedRoute allowedRoles={STAFF_ROLES} />}>
-                <Route path="/attendance" element={<Attendance />} />
-                <Route path="/leaves" element={<Leaves />} />
-              </Route>
-
+              <Route path="/activity-log" element={<ActivityLog />} />
+              <Route path="/inventory-alerts" element={<InventoryAlerts />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/leaves" element={<Leaves />} />
               <Route path="/chat" element={<Chat />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Route>
           </Route>

@@ -14,9 +14,6 @@ router.post(
   generatePatientQrShareLink,
 );
 
-router
-  .route('/patients/:patientId/details')
-  .get(resolvePatientQrShareDetails)
-  .post(resolvePatientQrShareDetails);
+router.get('/patients/:patientId/details', resolvePatientQrShareDetails);
 
 export default router;
