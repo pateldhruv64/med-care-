@@ -31,6 +31,7 @@ const InventoryAlerts = lazy(() => import('./pages/InventoryAlerts'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const Leaves = lazy(() => import('./pages/Leaves'));
 const Chat = lazy(() => import('./pages/Chat'));
+const QrPatientDetails = lazy(() => import('./pages/QrPatientDetails'));
 
 function App() {
   const { user } = useAuth();
@@ -48,6 +49,7 @@ function App() {
             path="/register"
             element={!user ? <Register /> : <Navigate to="/dashboard" />}
           />
+          <Route path="/qr-patient/:patientId" element={<QrPatientDetails />} />
 
           {/* Protected Routes */}
           <Route

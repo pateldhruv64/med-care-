@@ -23,6 +23,7 @@ import attendanceRoutes from './routes/attendanceRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import qrShareRoutes from './routes/qrShareRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 import { createServer } from 'http';
@@ -134,6 +135,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/qr-share', qrShareRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
