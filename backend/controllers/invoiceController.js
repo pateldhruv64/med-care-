@@ -7,8 +7,21 @@ import Appointment from '../models/Appointment.js';
 import logActivity from '../utils/logActivity.js';
 
 const ALLOWED_INVOICE_TYPES = new Set(['Consultation', 'Pharmacy', 'Bed']);
+const BILLING_ROLE_ROOMS = [
+  'role:Admin',
+  'role:Receptionist',
+  'role:Pharmacist',
+];
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+
+const emitInvoiceUpdated = (io, patientId, payload) => {
+  let emitter = io.to(`user:${String(patientId)}`);
+  for (const room of BILLING_ROLE_ROOMS) {
+    emitter = emitter.to(room);
+  }
+  emitter.emit('invoice_updated', payload);
+};
 
 // @desc    Create an invoice
 // @route   POST /api/invoices
@@ -209,7 +222,7 @@ const createInvoice = async (req, res) => {
       });
 
       // Notify patient via socket
-      req.io.to(String(patientId)).emit('new_notification', {
+      req.io.to(`user:${String(patientId)}`).emit('new_notification', {
         message: `An invoice of ₹${total} has been generated`,
         type: 'billing',
       });
@@ -223,12 +236,8 @@ const createInvoice = async (req, res) => {
       .populate('doctor', 'firstName lastName profileImage')
       .populate('createdBy', 'firstName lastName profileImage');
 
-    // Secure broadcast: Patient + Admin + Receptionist
-    req.io
-      .to(String(patientId))
-      .to('Admin')
-      .to('Receptionist')
-      .emit('invoice_updated', fullInvoice);
+    // Secure broadcast: Patient + Billing operators
+    emitInvoiceUpdated(req.io, patientId, fullInvoice);
     // END: Real-time list update
 
     await logActivity({
@@ -294,7 +303,7 @@ const updateInvoiceStatus = async (req, res) => {
     });
 
     // Notify patient via socket
-    req.io.to(invoice.patient.toString()).emit('new_notification', {
+    req.io.to(`user:${invoice.patient.toString()}`).emit('new_notification', {
       message: `Your invoice of ₹${invoice.total} has been marked as paid`,
       type: 'billing',
     });
@@ -309,11 +318,7 @@ const updateInvoiceStatus = async (req, res) => {
     .populate('createdBy', 'firstName lastName profileImage');
 
   // Secure broadcast
-  req.io
-    .to(invoice.patient.toString())
-    .to('Admin')
-    .to('Receptionist')
-    .emit('invoice_updated', fullInvoice);
+  emitInvoiceUpdated(req.io, invoice.patient, fullInvoice);
   // END: Real-time list update
 
   await logActivity({

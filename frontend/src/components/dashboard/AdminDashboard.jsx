@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users,
   UserPlus,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../utils/axiosConfig';
+import { useSocket } from '../../context/SocketContext';
 import Card, { CardHeader, CardTitle } from '../ui/Card';
 import Badge from '../ui/Badge';
 
@@ -68,6 +69,7 @@ const StatCard = ({ title, value, icon: Icon, tone = 'info' }) => {
 };
 
 const AdminDashboard = () => {
+  const { socket } = useSocket();
   const [stats, setStats] = useState({
     patients: 0,
     doctors: 0,
@@ -78,55 +80,88 @@ const AdminDashboard = () => {
     pendingBills: 0,
   });
   const [recentAppointments, setRecentAppointments] = useState([]);
+  const refreshTimerRef = useRef(null);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const [patientsRes, doctorsRes, appointmentsRes, invoicesRes] =
+        await Promise.allSettled([
+          api.get('/patients'),
+          api.get('/doctors'),
+          api.get('/appointments'),
+          api.get('/invoices'),
+        ]);
+
+      const patients =
+        patientsRes.status === 'fulfilled' ? patientsRes.value.data : [];
+      const doctors =
+        doctorsRes.status === 'fulfilled' ? doctorsRes.value.data : [];
+      const appointments =
+        appointmentsRes.status === 'fulfilled'
+          ? appointmentsRes.value.data
+          : [];
+      const invoices =
+        invoicesRes.status === 'fulfilled' ? invoicesRes.value.data : [];
+
+      let totalEarnings = 0;
+      let pendingBills = 0;
+      totalEarnings = invoices
+        .filter((inv) => inv.status === 'Paid')
+        .reduce((sum, inv) => sum + inv.total, 0);
+      pendingBills = invoices.filter((inv) => inv.status === 'Unpaid').length;
+
+      const pending = appointments.filter((a) => a.status === 'Pending');
+      const completed = appointments.filter((a) => a.status === 'Completed');
+
+      setRecentAppointments(appointments.slice(0, 5));
+
+      setStats({
+        patients: patients.length,
+        doctors: doctors.length,
+        appointments: appointments.length,
+        pendingAppointments: pending.length,
+        completedAppointments: completed.length,
+        totalEarnings,
+        pendingBills,
+      });
+    } catch {}
+  }, []);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [patientsRes, doctorsRes, appointmentsRes, invoicesRes] =
-          await Promise.allSettled([
-            api.get('/patients'),
-            api.get('/doctors'),
-            api.get('/appointments'),
-            api.get('/invoices'),
-          ]);
-
-        const patients =
-          patientsRes.status === 'fulfilled' ? patientsRes.value.data : [];
-        const doctors =
-          doctorsRes.status === 'fulfilled' ? doctorsRes.value.data : [];
-        const appointments =
-          appointmentsRes.status === 'fulfilled'
-            ? appointmentsRes.value.data
-            : [];
-        const invoices =
-          invoicesRes.status === 'fulfilled' ? invoicesRes.value.data : [];
-
-        let totalEarnings = 0;
-        let pendingBills = 0;
-        totalEarnings = invoices
-          .filter((inv) => inv.status === 'Paid')
-          .reduce((sum, inv) => sum + inv.total, 0);
-        pendingBills = invoices.filter((inv) => inv.status === 'Unpaid').length;
-
-        const pending = appointments.filter((a) => a.status === 'Pending');
-        const completed = appointments.filter((a) => a.status === 'Completed');
-
-        setRecentAppointments(appointments.slice(0, 5));
-
-        setStats({
-          patients: patients.length,
-          doctors: doctors.length,
-          appointments: appointments.length,
-          pendingAppointments: pending.length,
-          completedAppointments: completed.length,
-          totalEarnings,
-          pendingBills,
-        });
-      } catch {}
-    };
-
     fetchStats();
-  }, []);
+  }, [fetchStats]);
+
+  const queueStatsRefresh = useCallback(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+    }
+
+    refreshTimerRef.current = setTimeout(() => {
+      fetchStats();
+      refreshTimerRef.current = null;
+    }, 300);
+  }, [fetchStats]);
+
+  useEffect(() => {
+    if (!socket) {
+      return undefined;
+    }
+
+    socket.on('invoice_updated', queueStatsRefresh);
+    socket.on('appointment_created', queueStatsRefresh);
+    socket.on('appointment_status_updated', queueStatsRefresh);
+
+    return () => {
+      socket.off('invoice_updated', queueStatsRefresh);
+      socket.off('appointment_created', queueStatsRefresh);
+      socket.off('appointment_status_updated', queueStatsRefresh);
+
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [socket, queueStatsRefresh]);
 
   return (
     <div className="space-y-6">

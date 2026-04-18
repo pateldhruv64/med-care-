@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression'; // added for gzip compression
+import jwt from 'jsonwebtoken';
 import userRoutes from './routes/authRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
@@ -24,6 +25,7 @@ import leaveRoutes from './routes/leaveRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import qrShareRoutes from './routes/qrShareRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
+import User from './models/User.js';
 
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -82,12 +84,103 @@ const io = new Server(httpServer, {
   },
 });
 
-io.on('connection', (socket) => {
-  // console.log('New client connected:', socket.id);
+const parseCookies = (cookieHeader = '') => {
+  if (typeof cookieHeader !== 'string' || !cookieHeader.trim()) {
+    return {};
+  }
 
-  socket.on('join_room', (userId) => {
+  return cookieHeader.split(';').reduce((acc, cookie) => {
+    const [rawKey, ...rawValue] = cookie.trim().split('=');
+    const key = String(rawKey || '').trim();
+
+    if (!key) {
+      return acc;
+    }
+
+    const value = rawValue.join('=');
+    try {
+      acc[key] = decodeURIComponent(value);
+    } catch {
+      acc[key] = value;
+    }
+
+    return acc;
+  }, {});
+};
+
+const getSocketToken = (socket) => {
+  const authToken = socket.handshake.auth?.token;
+  if (typeof authToken === 'string' && authToken.trim()) {
+    return authToken.startsWith('Bearer ')
+      ? authToken.slice(7).trim()
+      : authToken.trim();
+  }
+
+  const authHeader = socket.handshake.headers?.authorization;
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7).trim();
+  }
+
+  const cookies = parseCookies(socket.handshake.headers?.cookie);
+  return String(cookies.jwt || '').trim();
+};
+
+const normalizeRoomName = (value) => String(value || '').trim();
+
+io.use(async (socket, next) => {
+  try {
+    const token = getSocketToken(socket);
+
+    if (!token) {
+      next(new Error('Authentication error: token missing'));
+      return;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('_id role').lean();
+
+    if (!user) {
+      next(new Error('Authentication error: user not found'));
+      return;
+    }
+
+    socket.data.userId = String(user._id);
+    socket.data.userRole = normalizeRoomName(user.role);
+
+    next();
+  } catch {
+    next(new Error('Authentication error: invalid token'));
+  }
+});
+
+io.on('connection', (socket) => {
+  const userId = normalizeRoomName(socket.data.userId);
+  const userRole = normalizeRoomName(socket.data.userRole);
+
+  if (userId) {
+    // legacy room support (raw userId)
     socket.join(userId);
-    // console.log(`User ${userId} joined room ${userId}`);
+    // canonical room support
+    socket.join(`user:${userId}`);
+  }
+
+  if (userRole) {
+    // legacy room support (raw role)
+    socket.join(userRole);
+    // canonical room support
+    socket.join(`role:${userRole}`);
+  }
+
+  socket.on('join_room', (requestedRoom) => {
+    const room = normalizeRoomName(requestedRoom);
+    if (!room || !userId) {
+      return;
+    }
+
+    const allowedRooms = new Set([userId, `user:${userId}`]);
+    if (allowedRooms.has(room)) {
+      socket.join(room);
+    }
   });
 
   socket.on('disconnect', () => {
