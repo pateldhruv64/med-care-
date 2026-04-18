@@ -138,7 +138,7 @@ const createPrescription = async (req, res) => {
       });
 
       // Notify patient via socket
-      req.io.to(String(patientId)).emit('new_notification', {
+      req.io.to(`user:${String(patientId)}`).emit('new_notification', {
         message: `Dr. ${req.user.firstName} prescribed medicines for: ${normalizedDiagnosis}`,
         type: 'prescription',
       });
@@ -150,10 +150,10 @@ const createPrescription = async (req, res) => {
 
       // Notify patient AND doctor (if they are on different devices/views)
       req.io
-        .to(String(patientId))
+        .to(`user:${String(patientId)}`)
         .emit('prescription_created', fullPrescription);
       req.io
-        .to(req.user._id.toString())
+        .to(`user:${req.user._id.toString()}`)
         .emit('prescription_created', fullPrescription);
       // END: Real-time list update
     } catch (e) {

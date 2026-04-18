@@ -69,7 +69,7 @@ const createLabReport = async (req, res) => {
       });
 
       // Notify patient via socket
-      req.io.to(patientId).emit('new_notification', {
+      req.io.to(`user:${String(patientId)}`).emit('new_notification', {
         message: `A ${normalizedTestName} test has been ordered for you`,
         type: 'lab_report',
       });
@@ -80,8 +80,17 @@ const createLabReport = async (req, res) => {
         .populate('doctor', 'firstName lastName profileImage')
         .populate('orderedBy', 'firstName lastName profileImage');
 
-      req.io.to(patientId).emit('lab_report_updated', fullReport);
-      req.io.to(req.user._id.toString()).emit('lab_report_updated', fullReport); // Notify doctor/admin who created it
+      const realtimeTargets = new Set([
+        String(patientId),
+        String(assignedDoctorId),
+        String(req.user._id),
+      ]);
+
+      for (const targetUserId of realtimeTargets) {
+        req.io
+          .to(`user:${targetUserId}`)
+          .emit('lab_report_updated', fullReport);
+      }
       // END: Real-time list update
     } catch (e) {
       /* ignore */
@@ -175,7 +184,7 @@ const updateLabReport = async (req, res) => {
       });
 
       // Notify patient via socket
-      req.io.to(report.patient.toString()).emit('new_notification', {
+      req.io.to(`user:${report.patient.toString()}`).emit('new_notification', {
         message: `Your ${report.testName} results are ready`,
         type: 'lab_report',
       });
@@ -188,10 +197,12 @@ const updateLabReport = async (req, res) => {
       .populate('patient', 'firstName lastName email profileImage')
       .populate('doctor', 'firstName lastName profileImage');
 
-    req.io.to(report.patient.toString()).emit('lab_report_updated', fullReport);
+    req.io
+      .to(`user:${report.patient.toString()}`)
+      .emit('lab_report_updated', fullReport);
     if (report.doctor)
       req.io
-        .to(report.doctor.toString())
+        .to(`user:${report.doctor.toString()}`)
         .emit('lab_report_updated', fullReport);
     // END: Real-time list update
   }

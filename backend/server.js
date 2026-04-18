@@ -84,6 +84,38 @@ const io = new Server(httpServer, {
   },
 });
 
+const activeUserSockets = new Map();
+
+const markUserOnline = (userId, socketId) => {
+  if (!userId || !socketId) {
+    return;
+  }
+
+  const existingSockets = activeUserSockets.get(userId) || new Set();
+  existingSockets.add(socketId);
+  activeUserSockets.set(userId, existingSockets);
+};
+
+const markUserOffline = (userId, socketId) => {
+  if (!userId || !socketId) {
+    return;
+  }
+
+  const existingSockets = activeUserSockets.get(userId);
+  if (!existingSockets) {
+    return;
+  }
+
+  existingSockets.delete(socketId);
+  if (existingSockets.size === 0) {
+    activeUserSockets.delete(userId);
+  }
+};
+
+const emitOnlineUsers = () => {
+  io.emit('online_users', Array.from(activeUserSockets.keys()));
+};
+
 const parseCookies = (cookieHeader = '') => {
   if (typeof cookieHeader !== 'string' || !cookieHeader.trim()) {
     return {};
@@ -171,6 +203,11 @@ io.on('connection', (socket) => {
     socket.join(`role:${userRole}`);
   }
 
+  if (userId) {
+    markUserOnline(userId, socket.id);
+    emitOnlineUsers();
+  }
+
   socket.on('join_room', (requestedRoom) => {
     const room = normalizeRoomName(requestedRoom);
     if (!room || !userId) {
@@ -184,7 +221,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // console.log('Client disconnected');
+    if (userId) {
+      markUserOffline(userId, socket.id);
+      emitOnlineUsers();
+    }
   });
 });
 

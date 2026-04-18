@@ -5,6 +5,38 @@ import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import logActivity from '../utils/logActivity.js';
 
+const BED_REALTIME_ROLE_ROOMS = [
+  'role:Admin',
+  'role:Receptionist',
+  'role:Doctor',
+];
+
+const BILLING_ROLE_ROOMS = [
+  'role:Admin',
+  'role:Receptionist',
+  'role:Pharmacist',
+];
+
+const emitToRoleRooms = (io, rooms, eventName, payload) => {
+  let emitter = io;
+  for (const room of rooms) {
+    emitter = emitter.to(room);
+  }
+  emitter.emit(eventName, payload);
+};
+
+const emitBedUpdated = (io, payload) => {
+  emitToRoleRooms(io, BED_REALTIME_ROLE_ROOMS, 'bed_updated', payload);
+};
+
+const emitInvoiceUpdated = (io, patientId, payload) => {
+  let emitter = io.to(`user:${String(patientId)}`);
+  for (const room of BILLING_ROLE_ROOMS) {
+    emitter = emitter.to(room);
+  }
+  emitter.emit('invoice_updated', payload);
+};
+
 // @desc    Get all beds
 // @route   GET /api/beds
 const getBeds = async (req, res) => {
@@ -44,7 +76,7 @@ const addBed = async (req, res) => {
   });
 
   // Real-time update - Broadcast to all staff managing beds
-  req.io.to('Staff').emit('bed_updated', bed);
+  emitBedUpdated(req.io, bed);
 
   res.status(201).json(bed);
 };
@@ -98,7 +130,7 @@ const assignBed = async (req, res) => {
     });
 
     // Notify patient via socket
-    req.io.to(patientId).emit('new_notification', {
+    req.io.to(`user:${String(patientId)}`).emit('new_notification', {
       message: `You have been assigned to Room ${bed.roomNumber}, Bed ${bed.bedNumber} (${bed.ward} Ward)`,
       type: 'bed',
     });
@@ -116,7 +148,7 @@ const assignBed = async (req, res) => {
   });
 
   // Real-time update
-  req.io.to('Staff').emit('bed_updated', updated);
+  emitBedUpdated(req.io, updated);
 
   res.json(updated);
 };
@@ -126,6 +158,7 @@ const assignBed = async (req, res) => {
 const dischargeBed = async (req, res) => {
   const session = await mongoose.startSession();
   let patientToNotify = null;
+  let createdInvoiceId = null;
   let totalAmount = 0;
   let roomNumber = '';
   let bedNumber = '';
@@ -159,7 +192,7 @@ const dischargeBed = async (req, res) => {
     const dailyRate = Number(bed.dailyRate) || 500;
     totalAmount = daysStayed * dailyRate;
 
-    await Invoice.create(
+    const [createdInvoice] = await Invoice.create(
       [
         {
           patient: bed.patient,
@@ -181,6 +214,8 @@ const dischargeBed = async (req, res) => {
       ],
       { session },
     );
+
+    createdInvoiceId = createdInvoice?._id;
 
     roomNumber = bed.roomNumber;
     bedNumber = bed.bedNumber;
@@ -217,12 +252,23 @@ const dischargeBed = async (req, res) => {
       });
 
       // Notify patient via socket
-      req.io.to(patientToNotify).emit('new_notification', {
+      req.io.to(`user:${patientToNotify}`).emit('new_notification', {
         message: `You have been discharged from Room ${roomNumber}, Bed ${bedNumber}. A bill of ₹${totalAmount} has been generated.`,
         type: 'bed',
       });
     } catch (e) {
       /* ignore */
+    }
+  }
+
+  if (createdInvoiceId && patientToNotify) {
+    const fullInvoice = await Invoice.findById(createdInvoiceId)
+      .populate('patient', 'firstName lastName email profileImage')
+      .populate('doctor', 'firstName lastName profileImage')
+      .populate('createdBy', 'firstName lastName profileImage');
+
+    if (fullInvoice) {
+      emitInvoiceUpdated(req.io, patientToNotify, fullInvoice);
     }
   }
 
@@ -236,7 +282,7 @@ const dischargeBed = async (req, res) => {
   });
 
   // Real-time update
-  req.io.to('Staff').emit('bed_updated', updatedBed);
+  emitBedUpdated(req.io, updatedBed);
 
   res.json(updatedBed);
 };
@@ -274,7 +320,7 @@ const updateBed = async (req, res) => {
     .populate('assignedBy', 'firstName lastName profileImage');
 
   // Real-time update
-  req.io.to('Staff').emit('bed_updated', updated);
+  emitBedUpdated(req.io, updated);
 
   res.json(updated);
 };

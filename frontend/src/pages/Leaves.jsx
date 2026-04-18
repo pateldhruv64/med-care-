@@ -52,7 +52,7 @@ const Leaves = () => {
     const loadData = async () => {
       setLoading(true);
       await fetchMyLeaves();
-      if (user.role === 'Admin' || user.role === 'HR') {
+      if (user.role === 'Admin') {
         await fetchAllLeaves();
       }
       setLoading(false);
@@ -80,8 +80,8 @@ const Leaves = () => {
         });
       }
 
-      // Update All Leaves (for Admin/HR)
-      if (user.role === 'Admin' || user.role === 'HR') {
+      // Update All Leaves (for Admin)
+      if (user.role === 'Admin') {
         setAllLeaves((prev) => {
           const exists = prev.find((l) => l._id === updatedLeave._id);
           if (exists)

@@ -1,8 +1,14 @@
 import Medicine from '../models/Medicine.js';
 import logActivity from '../utils/logActivity.js';
 
+const MEDICINE_ROLE_ROOMS = ['role:Admin', 'role:Pharmacist'];
+
 const emitMedicineUpdate = (io, payload) => {
-  io.to('Admin').to('Pharmacist').emit('medicine_updated', payload);
+  let emitter = io;
+  for (const room of MEDICINE_ROLE_ROOMS) {
+    emitter = emitter.to(room);
+  }
+  emitter.emit('medicine_updated', payload);
 };
 
 // @desc    Get all medicines
